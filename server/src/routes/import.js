@@ -159,16 +159,26 @@ async function loadCategories() {
   defaultCategory = cats.find((c) => c.name === "Other" || c.name === "Altele") || cats[0];
 }
 
-function guessCategory(description) {
+function guessCategory(description, historicalCategoryMap = new Map()) {
   if (!categoryCache) return null;
-  const descLower = description.toLowerCase();
+  const descLower = description.toLowerCase().trim();
   
+  // 1. Dynamic Auto-Learning: Check if we have assigned a category to this exact description before
+  if (historicalCategoryMap.has(descLower)) {
+    const histCatId = historicalCategoryMap.get(descLower);
+    const match = categoryCache.find(c => c.id === histCatId);
+    if (match) return match;
+  }
+
+  // 2. Static Dictionary: Fallback to keyword guessing
   for (const [keyword, catName] of Object.entries(keywordToCategoryMap)) {
     if (descLower.includes(keyword)) {
       const match = categoryCache.find((c) => c.name.toLowerCase() === catName.toLowerCase());
       if (match) return match;
     }
   }
+  
+  // 3. Fallback: Default category
   return defaultCategory;
 }
 
@@ -260,13 +270,19 @@ router.post("/", upload.single("file"), async (req, res, next) => {
       return res.status(400).json({ message: "No valid transactions found in file." });
     }
 
-    // Fetch existing transactions to avoid duplicates
+    // Fetch existing transactions to avoid duplicates AND build historical memory
     const existingTx = await prisma.transaction.findMany({
-      select: { date: true, amount: true, description: true }
+      select: { date: true, amount: true, description: true, categoryId: true },
+      orderBy: { date: 'asc' } // Older first, so newer transactions overwrite the map
     });
-    const existingSet = new Set(
-      existingTx.map(t => `${t.date.getTime()}-${t.amount}-${t.description}`)
-    );
+    
+    const existingSet = new Set();
+    const historicalCategoryMap = new Map();
+    
+    for (const t of existingTx) {
+      existingSet.add(`${t.date.getTime()}-${t.amount}-${t.description}`);
+      historicalCategoryMap.set(t.description.toLowerCase().trim(), t.categoryId);
+    }
 
     // Save to DB in bulk for extreme speed
     const transactionsToInsert = [];
@@ -282,7 +298,7 @@ router.post("/", upload.single("file"), async (req, res, next) => {
       }
       existingSet.add(hash);
 
-      const category = guessCategory(tx.description);
+      const category = guessCategory(tx.description, historicalCategoryMap);
       const catId = category ? category.id : defaultCategory.id;
 
       transactionsToInsert.push({
