@@ -239,4 +239,50 @@ router.delete("/:id", async (req, res, next) => {
   }
 });
 
+// ─── POST /api/transactions/bulk-delete ──────────────────────────────
+router.post("/bulk-delete", async (req, res, next) => {
+  try {
+    const { startDate, endDate, categoryId } = req.body;
+    
+    const where = {};
+    if (startDate || endDate) {
+      where.date = {};
+      if (startDate) where.date.gte = new Date(startDate);
+      if (endDate) where.date.lte = new Date(endDate);
+    }
+    if (categoryId) {
+      where.categoryId = categoryId;
+    }
+
+    // Get affected categories for budget recalculation BEFORE deleting
+    // Only need to recalculate expenses
+    const affectedTransactions = await prisma.transaction.findMany({
+      where: { ...where, type: "EXPENSE" },
+      select: { categoryId: true, date: true }
+    });
+
+    const deleted = await prisma.transaction.deleteMany({
+      where
+    });
+
+    // Recalculate budgets for all affected (category, month) combinations
+    const budgetsToRecalc = new Set();
+    for (const tx of affectedTransactions) {
+      const d = tx.date;
+      const month = d.getMonth() + 1;
+      const year = d.getFullYear();
+      budgetsToRecalc.add(`${tx.categoryId}|${year}-${month}-01`);
+    }
+
+    for (const item of budgetsToRecalc) {
+      const [catId, dateStr] = item.split("|");
+      await recalculateBudgetSpent(catId, new Date(dateStr));
+    }
+
+    res.json({ message: "Deleted successfully", count: deleted.count });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

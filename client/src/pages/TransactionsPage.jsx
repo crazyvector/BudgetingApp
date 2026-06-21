@@ -4,8 +4,9 @@ import TransactionFilters from "../components/transactions/TransactionFilters.js
 import TransactionList from "../components/transactions/TransactionList.jsx";
 import Modal from "../components/ui/Modal.jsx";
 import ImportModal from "../components/ui/ImportModal.jsx";
+import BulkDeleteModal from "../components/ui/BulkDeleteModal.jsx";
 import Button from "../components/ui/Button.jsx";
-import { Plus, Download, Upload } from "lucide-react";
+import { Plus, Download, Upload, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   getTransactions,
@@ -32,6 +33,7 @@ export default function TransactionsPage() {
   const [formLoading, setFormLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
 
   // Fetch transactions with current filters
@@ -157,17 +159,21 @@ export default function TransactionsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => setImportModalOpen(true)} title="Import CSV/PDF">
-            <Upload size={16} />
-            <span className="hidden sm:inline">Import</span>
+          <Button variant="ghost" onClick={handleExportCSV}>
+            <Download size={16} className="mr-2" />
+            Export
           </Button>
-          <Button variant="secondary" onClick={handleExportCSV} title="Export to CSV">
-            <Download size={16} />
-            <span className="hidden sm:inline">Export</span>
+          <Button variant="danger" onClick={() => setBulkDeleteModalOpen(true)}>
+            <Trash2 size={16} className="mr-2" />
+            Bulk Delete
+          </Button>
+          <Button variant="secondary" onClick={() => setImportModalOpen(true)}>
+            <Upload size={16} className="mr-2" />
+            Import CSV
           </Button>
           <Button onClick={openNewModal}>
-            <Plus size={16} />
-            <span className="hidden sm:inline">Add Transaction</span>
+            <Plus size={16} className="mr-2" />
+            Add Transaction
           </Button>
         </div>
       </div>
@@ -218,7 +224,13 @@ export default function TransactionsPage() {
       <ImportModal
         isOpen={importModalOpen}
         onClose={() => setImportModalOpen(false)}
-        onImportSuccess={() => fetchTransactions()}
+        onImported={() => fetchTransactions(1)}
+      />
+
+      <BulkDeleteModal
+        isOpen={bulkDeleteModalOpen}
+        onClose={() => setBulkDeleteModalOpen(false)}
+        onDeleted={() => fetchTransactions(1)}
       />
     </div>
   );

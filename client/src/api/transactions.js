@@ -14,3 +14,6 @@ export const updateTransaction = (id, data) =>
 
 export const deleteTransaction = (id) =>
   api.delete(`/transactions/${id}`).then((r) => r.data);
+
+export const bulkDeleteTransactions = (filters) =>
+  api.post(`/transactions/bulk-delete`, filters).then((r) => r.data);
