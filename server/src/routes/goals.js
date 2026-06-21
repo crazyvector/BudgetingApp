@@ -35,7 +35,20 @@ router.get("/", async (req, res, next) => {
       },
       orderBy: { createdAt: "desc" },
     });
-    res.json(goals);
+    const computedGoals = await Promise.all(
+      goals.map(async (goal) => {
+        const aggregate = await prisma.goalContribution.aggregate({
+          where: { goalId: goal.id },
+          _sum: { amount: true },
+        });
+
+        return {
+          ...goal,
+          currentAmount: aggregate._sum.amount || 0,
+        };
+      })
+    );
+    res.json(computedGoals);
   } catch (err) {
     next(err);
   }
@@ -52,7 +65,17 @@ router.get("/:id", async (req, res, next) => {
         },
       },
     });
-    res.json(goal);
+    const aggregate = await prisma.goalContribution.aggregate({
+      where: { goalId: goal.id },
+      _sum: { amount: true },
+    });
+
+    const computedGoal = {
+      ...goal,
+      currentAmount: aggregate._sum.amount || 0,
+    };
+
+    res.json(computedGoal);
   } catch (err) {
     next(err);
   }
@@ -109,20 +132,24 @@ router.post("/:id/contributions", validate(addContributionSchema), async (req, r
     // Ensure goal exists
     const goal = await prisma.goal.findUniqueOrThrow({ where: { id: goalId } });
 
-    // Transaction to add contribution and update goal's cached currentAmount
-    const [contribution, updatedGoal] = await prisma.$transaction([
-      prisma.goalContribution.create({
-        data: {
-          ...req.body,
-          date: req.body.date ? new Date(req.body.date) : new Date(),
-          goalId,
-        },
-      }),
-      prisma.goal.update({
-        where: { id: goalId },
-        data: { currentAmount: { increment: req.body.amount } },
-      }),
-    ]);
+    // Transaction to add contribution
+    const contribution = await prisma.goalContribution.create({
+      data: {
+        ...req.body,
+        date: req.body.date ? new Date(req.body.date) : new Date(),
+        goalId,
+      },
+    });
+
+    const aggregate = await prisma.goalContribution.aggregate({
+      where: { goalId },
+      _sum: { amount: true },
+    });
+
+    const updatedGoal = {
+      ...goal,
+      currentAmount: aggregate._sum.amount || 0,
+    };
 
     res.status(201).json({ contribution, goal: updatedGoal });
   } catch (err) {

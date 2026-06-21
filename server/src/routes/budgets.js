@@ -38,7 +38,28 @@ router.get("/", async (req, res, next) => {
       }
     });
 
-    res.json(budgets);
+    const computedBudgets = await Promise.all(
+      budgets.map(async (budget) => {
+        const monthStart = new Date(budget.year, budget.month - 1, 1);
+        const monthEnd = new Date(budget.year, budget.month, 0, 23, 59, 59);
+
+        const aggregate = await prisma.transaction.aggregate({
+          where: {
+            categoryId: budget.categoryId,
+            type: "EXPENSE",
+            date: { gte: monthStart, lte: monthEnd },
+          },
+          _sum: { amount: true },
+        });
+
+        return {
+          ...budget,
+          spent: aggregate._sum.amount || 0,
+        };
+      })
+    );
+
+    res.json(computedBudgets);
   } catch (err) {
     next(err);
   }
@@ -52,23 +73,10 @@ router.post("/", validate(createBudgetSchema), async (req, res, next) => {
       where: { id: req.body.categoryId },
     });
 
-    // Calculate spent amount based on existing transactions
-    const monthStart = new Date(req.body.year, req.body.month - 1, 1);
-    const monthEnd = new Date(req.body.year, req.body.month, 0, 23, 59, 59);
-
-    const aggregate = await prisma.transaction.aggregate({
-      where: {
-        categoryId: req.body.categoryId,
-        type: "EXPENSE",
-        date: { gte: monthStart, lte: monthEnd },
-      },
-      _sum: { amount: true },
-    });
-
     const budget = await prisma.budget.create({
       data: {
         ...req.body,
-        spent: aggregate._sum.amount || 0,
+        spent: 0, // Ignored, as we compute dynamically on reads
       },
       include: {
         category: true,
