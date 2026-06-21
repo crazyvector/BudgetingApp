@@ -156,28 +156,28 @@ router.post("/", upload.single("file"), async (req, res, next) => {
       return res.status(400).json({ message: "No valid transactions found in file." });
     }
 
-    // Save to DB
-    let importedCount = 0;
+    // Save to DB in bulk for extreme speed
+    const transactionsToInsert = [];
     for (const tx of extractedData) {
       const category = guessCategory(tx.description);
       const catId = category ? category.id : defaultCategory.id;
 
-      // Optional: Check for duplicates to prevent double-importing
-      // We'll skip this for now to keep it simple, or user can delete manually.
-
-      await prisma.transaction.create({
-        data: {
-          date: tx.date,
-          amount: tx.amount,
-          type: tx.type,
-          description: tx.description.substring(0, 255), // limit length
-          categoryId: catId,
-        },
+      transactionsToInsert.push({
+        date: tx.date,
+        amount: tx.amount,
+        type: tx.type,
+        description: tx.description.substring(0, 255), // limit length
+        categoryId: catId,
       });
-      importedCount++;
     }
 
-    res.json({ message: "Import successful", count: importedCount });
+    if (transactionsToInsert.length > 0) {
+      await prisma.transaction.createMany({
+        data: transactionsToInsert,
+      });
+    }
+
+    res.json({ message: "Import successful", count: transactionsToInsert.length });
   } catch (error) {
     console.error("Import error:", error);
     next(error);
