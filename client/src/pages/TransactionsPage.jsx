@@ -3,8 +3,9 @@ import TransactionForm from "../components/transactions/TransactionForm.jsx";
 import TransactionFilters from "../components/transactions/TransactionFilters.jsx";
 import TransactionList from "../components/transactions/TransactionList.jsx";
 import Modal from "../components/ui/Modal.jsx";
+import ImportModal from "../components/ui/ImportModal.jsx";
 import Button from "../components/ui/Button.jsx";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   getTransactions,
@@ -30,6 +31,7 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [formLoading, setFormLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
 
   // Fetch transactions with current filters
@@ -155,6 +157,10 @@ export default function TransactionsPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => setImportModalOpen(true)} title="Import CSV/PDF">
+            <Upload size={16} />
+            <span className="hidden sm:inline">Import</span>
+          </Button>
           <Button variant="secondary" onClick={handleExportCSV} title="Export to CSV">
             <Download size={16} />
             <span className="hidden sm:inline">Export</span>
@@ -208,6 +214,12 @@ export default function TransactionsPage() {
           loading={formLoading}
         />
       </Modal>
+
+      <ImportModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onImportSuccess={() => fetchTransactions()}
+      />
     </div>
   );
 }

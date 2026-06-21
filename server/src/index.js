@@ -10,6 +10,7 @@ import reportsRouter from "./routes/reports.js";
 import budgetsRouter from "./routes/budgets.js";
 import goalsRouter from "./routes/goals.js";
 import tasksRouter from "./routes/tasks.js";
+import importRouter from "./routes/import.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -38,6 +39,7 @@ app.use("/api/reports", requireAuth, reportsRouter);
 app.use("/api/budgets", requireAuth, budgetsRouter);
 app.use("/api/goals", requireAuth, goalsRouter);
 app.use("/api/tasks", requireAuth, tasksRouter);
+app.use("/api/transactions/import", requireAuth, importRouter);
 
 // ─── 404 Handler ─────────────────────────────────────────────────────
 app.use((_req, res) => {
