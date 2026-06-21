@@ -172,11 +172,16 @@ async function parseCSV(filePath, bank) {
           // Revolut Logic
           if (row.State && row.State !== "COMPLETED") return;
           const rawAmount = parseFloat(row.Amount);
+          const fee = parseFloat(row.Fee) || 0;
           if (isNaN(rawAmount) || rawAmount === 0) return;
           const date = new Date(row["Started Date"] || row["Completed Date"]);
           if (isNaN(date)) return;
           const type = rawAmount < 0 ? "EXPENSE" : "INCOME";
-          const amount = Math.abs(rawAmount);
+          
+          let amount = Math.abs(rawAmount);
+          if (type === "EXPENSE") amount += Math.abs(fee);
+          else amount -= Math.abs(fee);
+          
           const description = row.Description || "Revolut Transaction";
           transactions.push({ date, amount, type, description });
         } else if (bank === "bt") {
@@ -244,9 +249,28 @@ router.post("/", upload.single("file"), async (req, res, next) => {
       return res.status(400).json({ message: "No valid transactions found in file." });
     }
 
+    // Fetch existing transactions to avoid duplicates
+    const existingTx = await prisma.transaction.findMany({
+      select: { date: true, amount: true, description: true }
+    });
+    const existingSet = new Set(
+      existingTx.map(t => `${t.date.getTime()}-${t.amount}-${t.description}`)
+    );
+
     // Save to DB in bulk for extreme speed
     const transactionsToInsert = [];
+    let duplicateCount = 0;
+
     for (const tx of extractedData) {
+      const descLimited = tx.description.substring(0, 255);
+      const hash = `${tx.date.getTime()}-${tx.amount}-${descLimited}`;
+      
+      if (existingSet.has(hash)) {
+        duplicateCount++;
+        continue;
+      }
+      existingSet.add(hash);
+
       const category = guessCategory(tx.description);
       const catId = category ? category.id : defaultCategory.id;
 
@@ -254,7 +278,7 @@ router.post("/", upload.single("file"), async (req, res, next) => {
         date: tx.date,
         amount: tx.amount,
         type: tx.type,
-        description: tx.description.substring(0, 255), // limit length
+        description: descLimited,
         categoryId: catId,
       });
     }
@@ -265,7 +289,11 @@ router.post("/", upload.single("file"), async (req, res, next) => {
       });
     }
 
-    res.json({ message: "Import successful", count: transactionsToInsert.length });
+    res.json({ 
+      message: "Import successful", 
+      count: transactionsToInsert.length,
+      duplicatesSkipped: duplicateCount 
+    });
   } catch (error) {
     console.error("Import error:", error);
     next(error);
