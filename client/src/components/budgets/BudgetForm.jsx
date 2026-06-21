@@ -80,7 +80,7 @@ export default function BudgetForm({
       />
 
       <Input
-        label="Monthly Limit ($)"
+        label="Monthly Limit (RON)"
         type="number"
         step="0.01"
         min="0"

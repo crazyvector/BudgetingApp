@@ -1,12 +1,12 @@
 import { format, parseISO, isValid } from "date-fns";
 
 /**
- * Format a number as currency (USD).
+ * Format a number as currency (RON).
  */
 export function formatCurrency(amount) {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("ro-RO", {
     style: "currency",
-    currency: "USD",
+    currency: "RON",
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount);
@@ -17,9 +17,9 @@ export function formatCurrency(amount) {
  */
 export function formatCompactCurrency(amount) {
   if (Math.abs(amount) >= 1000) {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("ro-RO", {
       style: "currency",
-      currency: "USD",
+      currency: "RON",
       notation: "compact",
       maximumFractionDigits: 1,
     }).format(amount);

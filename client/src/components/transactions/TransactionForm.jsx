@@ -107,7 +107,7 @@ export default function TransactionForm({
 
       {/* Amount */}
       <Input
-        label="Amount ($)"
+        label="Amount (RON)"
         type="number"
         step="0.01"
         min="0"

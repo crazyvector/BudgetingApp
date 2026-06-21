@@ -93,7 +93,7 @@ export default function GoalForm({ initialData = null, onSubmit, onCancel, loadi
       />
 
       <Input
-        label="Target Amount ($)"
+        label="Target Amount (RON)"
         type="number"
         step="0.01"
         min="0"
