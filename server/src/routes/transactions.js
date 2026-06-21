@@ -22,7 +22,16 @@ const createTransactionSchema = z.object({
   categoryId: z.string().min(1, "Category is required"),
 });
 
-const updateTransactionSchema = createTransactionSchema.partial();
+const updateTransactionSchema = z.object({
+  amount: z.number().positive("Amount must be greater than 0").optional(),
+  type: z.enum(["INCOME", "EXPENSE"]).optional(),
+  description: z.string().max(255).optional(),
+  date: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Invalid date format",
+  }).optional(),
+  categoryId: z.string().min(1, "Category is required").optional(),
+  updateAllRelated: z.boolean().optional()
+});
 
 // ─── Helper: Recalculate budget spent amount ─────────────────────────
 async function recalculateBudgetSpent(categoryId, date) {
@@ -188,8 +197,23 @@ router.put(
       });
 
       const updateData = { ...req.body };
+      const updateAllRelated = updateData.updateAllRelated;
+      delete updateData.updateAllRelated;
+
       if (updateData.date) {
         updateData.date = new Date(updateData.date);
+      }
+
+      let affectedTxs = [];
+      if (updateAllRelated && existing.description) {
+        affectedTxs = await prisma.transaction.findMany({
+          where: { description: existing.description }
+        });
+        
+        await prisma.transaction.updateMany({
+          where: { description: existing.description },
+          data: { categoryId: updateData.categoryId }
+        });
       }
 
       const transaction = await prisma.transaction.update({
@@ -207,6 +231,16 @@ router.put(
           transaction.categoryId,
           transaction.date
         );
+      }
+      
+      // Recalculate for mass updated
+      if (updateAllRelated && existing.description) {
+         for (const tx of affectedTxs) {
+            if (tx.type === "EXPENSE") {
+              await recalculateBudgetSpent(tx.categoryId, tx.date);
+              await recalculateBudgetSpent(transaction.categoryId, tx.date);
+            }
+         }
       }
 
       res.json(transaction);

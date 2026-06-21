@@ -18,6 +18,7 @@ export default function TransactionForm({
     date: formatDateForInput(new Date()),
     categoryId: "",
   });
+  const [updateAllRelated, setUpdateAllRelated] = useState(false);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -79,6 +80,7 @@ export default function TransactionForm({
       description: form.description,
       date: form.date,
       categoryId: form.categoryId,
+      updateAllRelated,
     });
   }
 
@@ -137,12 +139,28 @@ export default function TransactionForm({
       />
 
       {/* Description */}
-      <Input
-        label="Description (optional)"
-        placeholder="e.g. Weekly groceries"
-        value={form.description}
-        onChange={handleChange("description")}
-      />
+      <div className="flex flex-col gap-2">
+        <Input
+          label="Description (optional)"
+          placeholder="e.g. Weekly groceries"
+          value={form.description}
+          onChange={handleChange("description")}
+        />
+        {initialData && initialData.description && (
+          <div className="flex items-center gap-2 mt-1 px-1">
+            <input 
+              type="checkbox" 
+              id="updateAllRelated" 
+              checked={updateAllRelated} 
+              onChange={(e) => setUpdateAllRelated(e.target.checked)}
+              className="w-4 h-4 rounded text-brand-500 border-border-light focus:ring-brand-500"
+            />
+            <label htmlFor="updateAllRelated" className="text-sm text-text-secondary cursor-pointer">
+              Also update all past transactions from "{initialData.description}"
+            </label>
+          </div>
+        )}
+      </div>
 
       {/* Actions */}
       <div className="flex gap-3 pt-2">
