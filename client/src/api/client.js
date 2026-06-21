@@ -5,7 +5,7 @@ const baseURL = import.meta.env.VITE_API_URL || "/api";
 const api = axios.create({
   baseURL,
   headers: { "Content-Type": "application/json" },
-  timeout: 30000,
+  timeout: 300000, // 5 minutes to allow for large CSV imports
 });
 
 api.interceptors.request.use((config) => {
