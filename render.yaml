@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: budget-api
+    env: node
+    buildCommand: npm install && cd server && npm install && npx prisma generate
+    startCommand: cd server && npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: PORT
+        value: "3001"
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
