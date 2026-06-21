@@ -39,6 +39,8 @@ const keywordToCategoryMap = {
   supeco: "Groceries",
   market: "Groceries",
   supermarket: "Groceries",
+  nemarval: "Groceries",
+  "nemarval market": "Groceries",
   
   // Entertainment & Subscriptions
   netflix: "Subscriptions",
@@ -54,6 +56,8 @@ const keywordToCategoryMap = {
   steam: "Entertainment",
   playstation: "Entertainment",
   xbox: "Entertainment",
+  superbet: "Entertainment",
+  "superbet.ro": "Entertainment",
   
   // Shopping
   emag: "Shopping",
@@ -113,6 +117,7 @@ const keywordToCategoryMap = {
   // Dining
   kfc: "Dining",
   mcdonalds: "Dining",
+  "mcdonald's": "Dining",
   "mc donald": "Dining",
   starbucks: "Dining",
   "5 to go": "Dining",
@@ -128,6 +133,12 @@ const keywordToCategoryMap = {
   luca: "Dining",
   matei: "Dining",
   paul: "Dining",
+  "food cottage": "Dining",
+  "taco bell": "Dining",
+  dallmayr: "Dining",
+  burger: "Dining",
+  "burger king": "Dining",
+  tsv: "Dining",
   
   // Income
   salariu: "Salary",
