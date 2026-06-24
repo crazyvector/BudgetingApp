@@ -280,7 +280,7 @@ router.post("/", upload.single("file"), async (req, res, next) => {
     const historicalCategoryMap = new Map();
     
     for (const t of existingTx) {
-      existingSet.add(`${t.date.getTime()}-${t.amount}-${t.description}`);
+      existingSet.add(`${t.date.getTime()}-${t.type}-${t.amount}-${t.description}`);
       historicalCategoryMap.set(t.description.toLowerCase().trim(), t.categoryId);
     }
 
@@ -290,7 +290,7 @@ router.post("/", upload.single("file"), async (req, res, next) => {
 
     for (const tx of extractedData) {
       const descLimited = tx.description.substring(0, 255);
-      const hash = `${tx.date.getTime()}-${tx.amount}-${descLimited}`;
+      const hash = `${tx.date.getTime()}-${tx.type}-${tx.amount}-${descLimited}`;
       
       if (existingSet.has(hash)) {
         duplicateCount++;
