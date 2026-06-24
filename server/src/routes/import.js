@@ -371,6 +371,19 @@ router.post("/", upload.single("file"), async (req, res, next) => {
       return res.status(400).json({ message: "Invalid or missing bank type" });
     }
 
+    // Auto-resolve accountId if not provided
+    let finalAccountId = accountId;
+    if (!finalAccountId) {
+      const allAccounts = await prisma.account.findMany();
+      if (bank === "revolut") {
+        const revAcc = allAccounts.find(a => a.name.toLowerCase().includes("revolut"));
+        if (revAcc) finalAccountId = revAcc.id;
+      } else if (bank === "bt") {
+        const btAcc = allAccounts.find(a => a.name.toLowerCase().includes("transilvania") || a.name.toLowerCase().includes("bt"));
+        if (btAcc) finalAccountId = btAcc.id;
+      }
+    }
+
     await loadCategories();
     if (!categoryCache || categoryCache.length === 0) {
       return res.status(400).json({ message: "Please seed or create categories first." });
@@ -427,7 +440,7 @@ router.post("/", upload.single("file"), async (req, res, next) => {
         type: tx.type,
         description: descLimited,
         categoryId: catId,
-        accountId: accountId || null,
+        accountId: finalAccountId || null,
       });
     }
 
