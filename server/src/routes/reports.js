@@ -17,6 +17,7 @@ router.get("/summary", async (req, res, next) => {
     const targetDate = req.query.month
       ? new Date(`${req.query.month}-01`)
       : new Date();
+    const accountId = req.query.accountId || undefined;
 
     const monthStart = startOfMonth(targetDate);
     const monthEnd = endOfMonth(targetDate);
@@ -24,6 +25,7 @@ router.get("/summary", async (req, res, next) => {
     const [incomeAgg, expenseAgg] = await Promise.all([
       prisma.transaction.aggregate({
         where: {
+          accountId,
           type: "INCOME",
           date: { gte: monthStart, lte: monthEnd },
         },
@@ -31,6 +33,7 @@ router.get("/summary", async (req, res, next) => {
       }),
       prisma.transaction.aggregate({
         where: {
+          accountId,
           type: "EXPENSE",
           date: { gte: monthStart, lte: monthEnd },
         },
@@ -67,6 +70,7 @@ router.get("/expenses-by-category", async (req, res, next) => {
     const expenses = await prisma.transaction.groupBy({
       by: ["categoryId"],
       where: {
+        accountId,
         type: "EXPENSE",
         date: { gte: monthStart, lte: monthEnd },
       },
@@ -105,6 +109,7 @@ router.get("/expenses-by-category", async (req, res, next) => {
 router.get("/monthly-trend", async (req, res, next) => {
   try {
     const months = Math.min(12, Math.max(1, parseInt(req.query.months) || 6));
+    const accountId = req.query.accountId || undefined;
     const now = new Date();
     const results = [];
 
@@ -116,6 +121,7 @@ router.get("/monthly-trend", async (req, res, next) => {
       const [incomeAgg, expenseAgg] = await Promise.all([
         prisma.transaction.aggregate({
           where: {
+            accountId,
             type: "INCOME",
             date: { gte: monthStart, lte: monthEnd },
           },
@@ -123,6 +129,7 @@ router.get("/monthly-trend", async (req, res, next) => {
         }),
         prisma.transaction.aggregate({
           where: {
+            accountId,
             type: "EXPENSE",
             date: { gte: monthStart, lte: monthEnd },
           },
@@ -149,8 +156,10 @@ router.get("/monthly-trend", async (req, res, next) => {
 router.get("/recent-transactions", async (req, res, next) => {
   try {
     const limit = Math.min(20, Math.max(1, parseInt(req.query.limit) || 5));
+    const accountId = req.query.accountId || undefined;
 
     const transactions = await prisma.transaction.findMany({
+      where: { accountId },
       include: { category: true },
       orderBy: { date: "desc" },
       take: limit,

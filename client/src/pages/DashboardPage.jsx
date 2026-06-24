@@ -16,6 +16,7 @@ export default function DashboardPage() {
   const [trend, setTrend] = useState([]);
   const [recentTxns, setRecentTxns] = useState([]);
   const [accounts, setAccounts] = useState([]);
+  const [selectedAccountId, setSelectedAccountId] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,10 +24,10 @@ export default function DashboardPage() {
       try {
         const [summaryData, categoryData, trendData, recentData, accountsData] =
           await Promise.all([
-            getSummary(),
-            getExpensesByCategory(),
-            getMonthlyTrend(6),
-            getRecentTransactions(7),
+            getSummary(null, selectedAccountId),
+            getExpensesByCategory(null, selectedAccountId),
+            getMonthlyTrend(6, selectedAccountId),
+            getRecentTransactions(7, selectedAccountId),
             fetchAccounts(),
           ]);
 
@@ -43,7 +44,7 @@ export default function DashboardPage() {
     }
 
     fetchDashboardData();
-  }, []);
+  }, [selectedAccountId]);
 
   if (loading) {
     return (
@@ -55,6 +56,27 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Header and Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-text-primary">Dashboard</h1>
+        
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-text-muted">Account:</label>
+          <select
+            value={selectedAccountId}
+            onChange={(e) => setSelectedAccountId(e.target.value)}
+            className="bg-surface-primary border border-border-light rounded-xl px-4 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all shadow-sm cursor-pointer"
+          >
+            <option value="">🌐 All Accounts (Global)</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.icon} {a.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Summary cards */}
       <SummaryCards data={summary} accounts={accounts} />
 
