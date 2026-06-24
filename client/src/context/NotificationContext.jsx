@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import api from "../../api/client.js";
+import api from "../api/client.js";
 
 const NotificationContext = createContext({});
 
