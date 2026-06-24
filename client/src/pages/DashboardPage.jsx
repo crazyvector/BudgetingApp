@@ -7,6 +7,7 @@ import {
   getSummary,
   getExpensesByCategory,
   getRecentTransactions,
+  getMonthlyTrend,
 } from "../api/reports.js";
 import { fetchAccounts } from "../api/client.js";
 
