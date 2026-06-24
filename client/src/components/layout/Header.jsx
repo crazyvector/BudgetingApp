@@ -1,6 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { Wallet, LogOut } from "lucide-react";
 import { useAuth } from "../../context/AuthContext.jsx";
+import NotificationBell from "./NotificationBell.jsx";
 
 const pageTitles = {
   "/": "Dashboard",
@@ -32,6 +33,7 @@ export default function Header() {
 
       {/* Right side — date and logout */}
       <div className="flex items-center gap-4">
+        <NotificationBell />
         <div className="text-sm text-text-muted hidden sm:block">
           {new Date().toLocaleDateString("en-US", {
             weekday: "short",

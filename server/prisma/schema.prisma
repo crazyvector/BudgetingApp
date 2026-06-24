@@ -23,6 +23,7 @@ model Category {
   createdAt DateTime @default(now())
 
   transactions Transaction[]
+  recurringTransactions RecurringTransaction[]
   budgets      Budget[]
 }
 
@@ -45,6 +46,24 @@ model Transaction {
 }
 
 
+
+// ─── Recurring Transaction ───────────────────────────────────────────
+// Templates for automatic transaction generation (subscriptions, etc.)
+model RecurringTransaction {
+  id          String   @id @default(uuid())
+  amount      Float
+  type        String   // "INCOME" or "EXPENSE"
+  description String
+  frequency   String   // "DAILY", "WEEKLY", "MONTHLY", "YEARLY"
+  startDate   DateTime
+  nextDate    DateTime
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+}
 
 // ─── Budget ──────────────────────────────────────────────────────────
 // Monthly spending cap per category (e.g., max $200 for Dining).

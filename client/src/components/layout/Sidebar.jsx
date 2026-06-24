@@ -6,6 +6,7 @@ import {
   Target,
   CheckSquare,
   Wallet,
+  Repeat
 } from "lucide-react";
 
 const iconMap = {
@@ -14,11 +15,13 @@ const iconMap = {
   PieChart,
   Target,
   CheckSquare,
+  Repeat
 };
 
 const navItems = [
   { path: "/", label: "Dashboard", icon: "LayoutDashboard" },
   { path: "/transactions", label: "Transactions", icon: "ArrowLeftRight" },
+  { path: "/recurring", label: "Recurring", icon: "Repeat" },
   { path: "/budgets", label: "Budgets", icon: "PieChart" },
   { path: "/goals", label: "Goals", icon: "Target" },
   { path: "/tasks", label: "Tasks", icon: "CheckSquare" },

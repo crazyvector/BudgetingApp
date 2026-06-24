@@ -11,6 +11,7 @@ import budgetsRouter from "./routes/budgets.js";
 import goalsRouter from "./routes/goals.js";
 import tasksRouter from "./routes/tasks.js";
 import importRouter from "./routes/import.js";
+import recurringRouter from "./routes/recurring.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -40,6 +41,7 @@ app.use("/api/budgets", requireAuth, budgetsRouter);
 app.use("/api/goals", requireAuth, goalsRouter);
 app.use("/api/tasks", requireAuth, tasksRouter);
 app.use("/api/transactions/import", requireAuth, importRouter);
+app.use("/api/recurring", requireAuth, recurringRouter);
 
 // ─── 404 Handler ─────────────────────────────────────────────────────
 app.use((_req, res) => {

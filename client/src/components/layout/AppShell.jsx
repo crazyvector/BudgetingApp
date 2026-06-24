@@ -1,9 +1,16 @@
+import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar.jsx";
 import Header from "./Header.jsx";
 import MobileNav from "./MobileNav.jsx";
+import api from "../../api/client.js";
 
 export default function AppShell() {
+  useEffect(() => {
+    // Process any due recurring transactions when app loads
+    api.post("/recurring/process").catch(err => console.error("Recurring process error:", err));
+  }, []);
+
   return (
     <div className="min-h-screen bg-surface-900 relative">
       {/* Decorative background orbs */}
