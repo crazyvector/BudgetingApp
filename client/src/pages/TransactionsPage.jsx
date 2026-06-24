@@ -13,6 +13,7 @@ import {
   createTransaction,
   updateTransaction,
   deleteTransaction,
+} from "../api/transactions.js";
 import { getCategories } from "../api/categories.js";
 import { fetchAccounts } from "../api/client.js";
 
