@@ -33,25 +33,35 @@ export default function TransactionForm({
     }
   }, [initialData]);
 
-  // Filter categories based on selected type
-  const filteredCategories = categories.filter(
-    (c) => c.type === form.type || c.type === "BOTH"
-  );
-
-  const categoryOptions = filteredCategories.map((c) => ({
+  // Show all categories, maybe sorted or grouped, but without filtering out by type.
+  // We'll just map all of them so the user can easily switch from expense to income directly from the dropdown.
+  const categoryOptions = categories.map((c) => ({
     value: c.id,
-    label: `${c.icon} ${c.name}`,
+    label: `${c.icon} ${c.name} ${c.type === "INCOME" ? "(Income)" : c.type === "EXPENSE" ? "(Expense)" : ""}`,
   }));
 
   function handleChange(field) {
     return (e) => {
       const value = e.target.value;
-      setForm((prev) => ({ ...prev, [field]: value }));
+      
+      setForm((prev) => {
+        const next = { ...prev, [field]: value };
+        // If they select a category, automatically update the type to match it
+        if (field === "categoryId") {
+          const selected = categories.find(c => c.id === value);
+          if (selected && selected.type !== "BOTH") {
+            next.type = selected.type;
+          }
+        }
+        return next;
+      });
+
       // Clear error on change
       if (errors[field]) {
         setErrors((prev) => ({ ...prev, [field]: null }));
       }
-      // Reset category when type changes
+      
+      // If they manually toggle the type button, reset the category
       if (field === "type") {
         setForm((prev) => ({ ...prev, categoryId: "", [field]: value }));
       }
