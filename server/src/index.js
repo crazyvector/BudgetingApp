@@ -12,9 +12,32 @@ import goalsRouter from "./routes/goals.js";
 import tasksRouter from "./routes/tasks.js";
 import importRouter from "./routes/import.js";
 import recurringRouter from "./routes/recurring.js";
+import accountsRouter from "./routes/accounts.js";
+import prisma from "./utils/prisma.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// ─── Auto-seed Accounts ──────────────────────────────────────────────
+async function seedAccounts() {
+  try {
+    const count = await prisma.account.count();
+    if (count === 0) {
+      console.log("No accounts found. Seeding default accounts...");
+      await prisma.account.createMany({
+        data: [
+          { name: "Revolut", icon: "💳", color: "#000000" },
+          { name: "Banca Transilvania", icon: "🏦", color: "#FDE047" },
+          { name: "Cash", icon: "💵", color: "#22C55E" },
+        ]
+      });
+      console.log("Default accounts created.");
+    }
+  } catch (error) {
+    console.error("Failed to seed accounts:", error);
+  }
+}
+seedAccounts();
 
 // ─── Middleware ───────────────────────────────────────────────────────
 app.use(
@@ -42,6 +65,7 @@ app.use("/api/goals", requireAuth, goalsRouter);
 app.use("/api/tasks", requireAuth, tasksRouter);
 app.use("/api/transactions/import", requireAuth, importRouter);
 app.use("/api/recurring", requireAuth, recurringRouter);
+app.use("/api/accounts", requireAuth, accountsRouter);
 
 // ─── 404 Handler ─────────────────────────────────────────────────────
 app.use((_req, res) => {

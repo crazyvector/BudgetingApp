@@ -16,15 +16,29 @@ datasource db {
 model Category {
   id        String   @id @default(cuid())
   name      String   @unique
-  icon      String   // emoji or icon identifier
-  color     String   // hex color code (e.g., "#4F46E5")
+  icon      String // emoji or icon identifier
+  color     String // hex color code (e.g., "#4F46E5")
   type      String   @default("EXPENSE") // "INCOME" | "EXPENSE" | "BOTH"
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  transactions Transaction[]
+  transactions          Transaction[]
   recurringTransactions RecurringTransaction[]
-  budgets      Budget[]
+  budgets               Budget[]
+}
+
+// ─── Account ─────────────────────────────────────────────────────────
+// Bank accounts, cash wallets, or any source of funds.
+model Account {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  icon      String   @default("🏦")
+  color     String   @default("#94A3B8")
+  balance   Float    @default(0) // Optionally track independent balance, or calculate dynamically
+  createdAt DateTime @default(now())
+
+  transactions          Transaction[]
+  recurringTransactions RecurringTransaction[]
 }
 
 // ─── Transaction ─────────────────────────────────────────────────────
@@ -32,37 +46,41 @@ model Category {
 model Transaction {
   id          String   @id @default(uuid())
   amount      Float
-  type        String   // "INCOME" or "EXPENSE"
+  type        String // "INCOME" or "EXPENSE"
   date        DateTime
   description String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
-  
-  goalId      String?
-  goal        Goal?    @relation(fields: [goalId], references: [id])
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id])
+
+  goalId String?
+  goal   Goal?   @relation(fields: [goalId], references: [id])
 }
-
-
 
 // ─── Recurring Transaction ───────────────────────────────────────────
 // Templates for automatic transaction generation (subscriptions, etc.)
 model RecurringTransaction {
   id          String   @id @default(uuid())
   amount      Float
-  type        String   // "INCOME" or "EXPENSE"
+  type        String // "INCOME" or "EXPENSE"
   description String
-  frequency   String   // "DAILY", "WEEKLY", "MONTHLY", "YEARLY"
+  frequency   String // "DAILY", "WEEKLY", "MONTHLY", "YEARLY"
   startDate   DateTime
   nextDate    DateTime
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id])
 }
 
 // ─── Budget ──────────────────────────────────────────────────────────
@@ -70,8 +88,8 @@ model RecurringTransaction {
 // `spent` is cached and recalculated on transaction mutations.
 model Budget {
   id         String   @id @default(cuid())
-  limit      Float    // maximum budget amount
-  month      Int      // 1–12
+  limit      Float // maximum budget amount
+  month      Int // 1–12
   year       Int
   spent      Float    @default(0) // cached sum of expenses
   categoryId String
@@ -87,16 +105,16 @@ model Budget {
 // ─── Goal ────────────────────────────────────────────────────────────
 // Savings target with a deadline and visual tracking.
 model Goal {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String
   targetAmount  Float
-  currentAmount Float    @default(0) // cached sum of contributions
+  currentAmount Float     @default(0) // cached sum of contributions
   deadline      DateTime?
-  color         String   @default("#6366F1")
-  icon          String   @default("🎯")
-  completed     Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  color         String    @default("#6366F1")
+  icon          String    @default("🎯")
+  completed     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   contributions GoalContribution[]
   transactions  Transaction[]
@@ -120,14 +138,14 @@ model GoalContribution {
 // ─── Task ────────────────────────────────────────────────────────────
 // Financial to-do items and reminders.
 model Task {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   title          String
-  description    String   @default("")
+  description    String    @default("")
   dueDate        DateTime?
-  completed      Boolean  @default(false)
-  priority       String   @default("MEDIUM") // "LOW" | "MEDIUM" | "HIGH"
-  recurring      Boolean  @default(false)
-  recurrenceRule String?  // "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  completed      Boolean   @default(false)
+  priority       String    @default("MEDIUM") // "LOW" | "MEDIUM" | "HIGH"
+  recurring      Boolean   @default(false)
+  recurrenceRule String? // "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }

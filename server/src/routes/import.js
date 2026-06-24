@@ -3,9 +3,42 @@ import multer from "multer";
 import fs from "fs";
 import csvParser from "csv-parser";
 import prisma from "../utils/prisma.js";
+import { execSync } from "child_process";
 
 const router = Router();
 const upload = multer({ dest: "uploads/" }); // Temporary storage for uploaded files
+
+// ─── Helper: Recalculate budget spent amount ─────────────────────────
+async function recalculateBudgetSpent(categoryId, date) {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const month = d.getMonth() + 1;
+  const year = d.getFullYear();
+
+  const budget = await prisma.budget.findUnique({
+    where: {
+      categoryId_month_year: { categoryId, month, year },
+    },
+  });
+
+  if (!budget) return;
+
+  const expenses = await prisma.transaction.aggregate({
+    _sum: { amount: true },
+    where: {
+      categoryId,
+      type: "EXPENSE",
+      date: {
+        gte: new Date(year, month - 1, 1),
+        lt: new Date(year, month, 1),
+      },
+    },
+  });
+
+  await prisma.budget.update({
+    where: { id: budget.id },
+    data: { spent: expenses._sum.amount || 0 },
+  });
+}
 
 // ─── Smart Category Guesser ──────────────────────────────────────────
 // Simple dictionary to guess categories from descriptions
@@ -242,11 +275,93 @@ async function parseCSV(filePath, bank) {
   });
 }
 
+// ─── PDF Parser (BT) ────────────────────────────────────────────────────────
+function parseBTPdf(filePath) {
+  try {
+    const output = execSync(`pdftotext -layout "${filePath}" -`, { encoding: "utf8" });
+    const lines = output.split('\n');
+    
+    let transactions = [];
+    let currentTx = null;
+    let currentDate = null;
+    
+    const dateRegex = /^\s*(\d{2}\/\d{2}\/\d{4})\s+/;
+    const amountRegex = /^[\d,]+\.\d{2}$/;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].replace(/\r/g, '');
+      if (line.trim() === '') continue;
+
+      const dateMatch = line.match(dateRegex);
+      if (dateMatch) {
+        const [day, month, year] = dateMatch[1].split('/');
+        currentDate = new Date(`${year}-${month}-${day}T12:00:00Z`);
+      }
+
+      if (!currentDate) continue;
+
+      const descPart = line.substring(17, 94).trim();
+      const debitPart = line.substring(94, 115).trim().split(' ')[0];
+      const creditPart = line.substring(115).trim().split(' ')[0];
+
+      if (
+        descPart === "" ||
+        descPart.includes("RULAJ ZI") || 
+        descPart.includes("SOLD FINAL") || 
+        descPart.includes("RULAJ TOTAL") || 
+        descPart.includes("SOLD ANTERIOR") || 
+        descPart.includes("TOTAL DISPONIBIL") || 
+        descPart.includes("Fonduri proprii") || 
+        descPart.includes("Credit neutilizat") ||
+        descPart.includes("SUME DATORATE") ||
+        descPart.includes("SUME BLOCATE") ||
+        descPart.includes("Acest extras de cont este valabil") ||
+        line.includes("BANCA TRANSILVANIA S.A.") ||
+        line.includes("Info clienti:") ||
+        line.includes("CRISTESCU ANDREI-STEFAN") ||
+        line.includes("Informatii noi pentru clientii") ||
+        line.includes("Fondurile pe care le aveti") ||
+        line.includes("Garantare a Depozitelor") ||
+        line.includes("ro/garantarea") ||
+        line.includes("EXTRAS CONT") ||
+        line.includes("Cod IBAN:") ||
+        line.includes("Data             Descriere")
+      ) {
+        continue;
+      }
+
+      let amount = 0;
+      let type = null;
+
+      if (creditPart && amountRegex.test(creditPart)) {
+        amount = parseFloat(creditPart.replace(/,/g, ''));
+        type = "INCOME";
+      } else if (debitPart && amountRegex.test(debitPart)) {
+        amount = parseFloat(debitPart.replace(/,/g, ''));
+        type = "EXPENSE";
+      }
+
+      if (amount > 0) {
+        if (currentTx) transactions.push(currentTx);
+        currentTx = { date: currentDate, description: descPart, amount, type };
+      } else if (currentTx && descPart) {
+        currentTx.description += " " + descPart;
+      }
+    }
+    
+    if (currentTx) transactions.push(currentTx);
+    return transactions;
+  } catch (err) {
+    console.error("Error parsing PDF:", err);
+    throw new Error("Eroare la parsarea PDF-ului BT. Asigurati-va ca aveti 'poppler-utils' instalat.");
+  }
+}
+
 // ─── Import Route ────────────────────────────────────────────────────
 router.post("/", upload.single("file"), async (req, res, next) => {
   try {
     const file = req.file;
-    const { bank } = req.body; // "revolut" or "bt"
+    const { bank, accountId } = req.body; // "revolut" or "bt", and optional accountId
 
     if (!file) {
       return res.status(400).json({ message: "No file uploaded" });
@@ -261,7 +376,12 @@ router.post("/", upload.single("file"), async (req, res, next) => {
       return res.status(400).json({ message: "Please seed or create categories first." });
     }
 
-    const extractedData = await parseCSV(file.path, bank);
+    let extractedData = [];
+    if (bank === "revolut") {
+      extractedData = await parseCSV(file.path, bank);
+    } else if (bank === "bt") {
+      extractedData = parseBTPdf(file.path);
+    }
 
     // Clean up temporary file
     fs.unlinkSync(file.path);
@@ -307,6 +427,7 @@ router.post("/", upload.single("file"), async (req, res, next) => {
         type: tx.type,
         description: descLimited,
         categoryId: catId,
+        accountId: accountId || null,
       });
     }
 
@@ -314,6 +435,20 @@ router.post("/", upload.single("file"), async (req, res, next) => {
       await prisma.transaction.createMany({
         data: transactionsToInsert,
       });
+
+      // Mass recalculate budgets for affected months and categories
+      const budgetsToRecalc = new Set();
+      for (const tx of transactionsToInsert) {
+        if (tx.type === "EXPENSE") {
+          const d = new Date(tx.date);
+          budgetsToRecalc.add(`${tx.categoryId}|${d.getFullYear()}-${d.getMonth() + 1}-01`);
+        }
+      }
+
+      for (const item of budgetsToRecalc) {
+        const [catId, dateStr] = item.split("|");
+        await recalculateBudgetSpent(catId, new Date(dateStr));
+      }
     }
 
     res.json({ 

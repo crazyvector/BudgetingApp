@@ -30,3 +30,4 @@ api.interceptors.response.use(
 );
 
 export default api;
+export const fetchAccounts = async () => (await api.get('/accounts')).data;

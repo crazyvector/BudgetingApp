@@ -6,6 +6,7 @@ import { Search, SlidersHorizontal, X } from "lucide-react";
 
 export default function TransactionFilters({
   categories = [],
+  accounts = [],
   filters,
   onFilterChange,
 }) {
@@ -22,6 +23,14 @@ export default function TransactionFilters({
     ...categories.map((c) => ({
       value: c.id,
       label: `${c.icon} ${c.name}`,
+    })),
+  ];
+
+  const accountOptions = [
+    { value: "", label: "All Accounts" },
+    ...accounts.map((a) => ({
+      value: a.id,
+      label: `${a.icon} ${a.name}`,
     })),
   ];
 
@@ -45,6 +54,7 @@ export default function TransactionFilters({
     onFilterChange({
       type: "",
       categoryId: "",
+      accountId: "",
       startDate: "",
       endDate: "",
       search: "",
@@ -56,6 +66,7 @@ export default function TransactionFilters({
   const hasActiveFilters =
     filters.type ||
     filters.categoryId ||
+    filters.accountId ||
     filters.startDate ||
     filters.endDate ||
     filters.search;
@@ -107,6 +118,12 @@ export default function TransactionFilters({
             options={categoryOptions}
             value={filters.categoryId || ""}
             onChange={handleChange("categoryId")}
+          />
+          <Select
+            label="Account"
+            options={accountOptions}
+            value={filters.accountId || ""}
+            onChange={handleChange("accountId")}
           />
           <Input
             label="From"

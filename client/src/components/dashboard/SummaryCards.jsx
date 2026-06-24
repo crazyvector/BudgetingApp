@@ -1,7 +1,7 @@
 import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { formatCurrency } from "../../utils/formatters.js";
 
-export default function SummaryCards({ data }) {
+export default function SummaryCards({ data, accounts = [] }) {
   const { totalIncome = 0, totalExpenses = 0, balance = 0 } = data || {};
 
   const cards = [
@@ -65,6 +65,25 @@ export default function SummaryCards({ data }) {
           </div>
         );
       })}
+      
+      {accounts.length > 0 && (
+        <div className="col-span-1 sm:col-span-3 mt-2">
+          <p className="text-sm text-text-muted font-medium mb-3">My Accounts</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {accounts.map((acc, i) => (
+              <div key={acc.id} className={`glass-card p-4 flex items-center gap-3 animate-slide-up delay-${i + 1}`} style={{ opacity: 0 }}>
+                 <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg" style={{ backgroundColor: acc.color + '20', color: acc.color }}>
+                   {acc.icon}
+                 </div>
+                 <div>
+                   <p className="text-xs text-text-muted font-medium">{acc.name}</p>
+                   <p className="text-md font-bold text-text-primary">{formatCurrency(acc.balance)}</p>
+                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

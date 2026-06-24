@@ -20,6 +20,7 @@ const createTransactionSchema = z.object({
     message: "Invalid date format",
   }),
   categoryId: z.string().min(1, "Category is required"),
+  accountId: z.string().optional(),
 });
 
 const updateTransactionSchema = z.object({
@@ -30,6 +31,7 @@ const updateTransactionSchema = z.object({
     message: "Invalid date format",
   }).optional(),
   categoryId: z.string().min(1, "Category is required").optional(),
+  accountId: z.string().optional(),
   updateAllRelated: z.boolean().optional()
 });
 
@@ -75,6 +77,7 @@ router.get("/", async (req, res, next) => {
       startDate,
       endDate,
       search,
+      accountId,
       sortBy = "date",
       sortOrder = "desc",
       page = "1",
@@ -90,6 +93,10 @@ router.get("/", async (req, res, next) => {
 
     if (categoryId) {
       where.categoryId = categoryId;
+    }
+
+    if (accountId) {
+      where.accountId = accountId;
     }
 
     if (startDate || endDate) {
@@ -116,7 +123,7 @@ router.get("/", async (req, res, next) => {
     const [transactions, total] = await Promise.all([
       prisma.transaction.findMany({
         where,
-        include: { category: true },
+        include: { category: true, account: true },
         orderBy: { [orderField]: orderDir },
         skip,
         take: limitNum,
@@ -143,7 +150,7 @@ router.get("/:id", async (req, res, next) => {
   try {
     const transaction = await prisma.transaction.findUniqueOrThrow({
       where: { id: req.params.id },
-      include: { category: true },
+      include: { category: true, account: true },
     });
     res.json(transaction);
   } catch (err) {
@@ -167,7 +174,7 @@ router.post(
           ...req.body,
           date: new Date(req.body.date),
         },
-        include: { category: true },
+        include: { category: true, account: true },
       });
 
       // Recalculate budget if this is an expense
@@ -219,7 +226,7 @@ router.put(
       const transaction = await prisma.transaction.update({
         where: { id: req.params.id },
         data: updateData,
-        include: { category: true },
+        include: { category: true, account: true },
       });
 
       // Recalculate budgets for old and new category/date combinations
@@ -286,6 +293,9 @@ router.post("/bulk-delete", async (req, res, next) => {
     }
     if (categoryId) {
       where.categoryId = categoryId;
+    }
+    if (req.body.accountId) {
+      where.accountId = req.body.accountId;
     }
 
     // Get affected categories for budget recalculation BEFORE deleting

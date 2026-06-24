@@ -4,9 +4,10 @@ import { UploadCloud, FileText, CheckCircle, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../api/client.js"; // adjust path as needed
 
-export default function ImportModal({ isOpen, onClose, onImportSuccess }) {
+export default function ImportModal({ isOpen, onClose, onImported, accounts = [] }) {
   const [file, setFile] = useState(null);
   const [bank, setBank] = useState("revolut"); // "revolut" or "bt"
+  const [accountId, setAccountId] = useState("");
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -34,6 +35,7 @@ export default function ImportModal({ isOpen, onClose, onImportSuccess }) {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("bank", bank);
+    if (accountId) formData.append("accountId", accountId);
 
     try {
       const response = await api.post("/transactions/import", formData, {
@@ -41,7 +43,7 @@ export default function ImportModal({ isOpen, onClose, onImportSuccess }) {
       });
       toast.success(`Successfully imported ${response.data.count} transactions!`);
       setFile(null);
-      onImportSuccess();
+      if (onImported) onImported();
       onClose();
     } catch (error) {
       toast.error(error.response?.data?.message || "Import failed. Please check the file format.");
@@ -79,8 +81,22 @@ export default function ImportModal({ isOpen, onClose, onImportSuccess }) {
                   : "border-border-light bg-surface-secondary text-text-muted hover:border-brand-300"
               }`}
             >
-              BT (CSV)
+              BT (PDF)
             </button>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-text-primary mb-1">Target Account (Optional)</label>
+            <select
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
+              className="w-full bg-surface-primary border border-border-light rounded-xl px-4 py-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all"
+            >
+              <option value="">No Account / Default</option>
+              {accounts.map(a => (
+                <option key={a.id} value={a.id}>{a.icon} {a.name}</option>
+              ))}
+            </select>
           </div>
 
           <div
@@ -95,7 +111,7 @@ export default function ImportModal({ isOpen, onClose, onImportSuccess }) {
               type="file"
               ref={fileInputRef}
               onChange={handleFileSelect}
-              accept=".csv,.xlsx"
+              accept=".csv,.xlsx,.pdf"
               className="hidden"
             />
             
@@ -109,7 +125,7 @@ export default function ImportModal({ isOpen, onClose, onImportSuccess }) {
               <>
                 <UploadCloud className="w-10 h-10 text-text-muted mb-3" />
                 <p className="font-medium text-text-primary">Click or drag file here</p>
-                <p className="text-xs text-text-muted mt-1">Accepts .csv format</p>
+                <p className="text-xs text-text-muted mt-1">Accepts .csv (Revolut) or .pdf (BT)</p>
               </>
             )}
           </div>

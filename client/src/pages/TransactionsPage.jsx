@@ -13,12 +13,13 @@ import {
   createTransaction,
   updateTransaction,
   deleteTransaction,
-} from "../api/transactions.js";
 import { getCategories } from "../api/categories.js";
+import { fetchAccounts } from "../api/client.js";
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [accounts, setAccounts] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [filters, setFilters] = useState({
     type: "",
@@ -62,9 +63,10 @@ export default function TransactionsPage() {
     [filters]
   );
 
-  // Fetch categories on mount
+  // Fetch categories and accounts on mount
   useEffect(() => {
     getCategories().then(setCategories).catch(console.error);
+    fetchAccounts().then(setAccounts).catch(console.error);
   }, []);
 
   // Re-fetch on filter change
@@ -181,6 +183,7 @@ export default function TransactionsPage() {
       {/* Filters */}
       <TransactionFilters
         categories={categories}
+        accounts={accounts}
         filters={filters}
         onFilterChange={setFilters}
       />
@@ -211,6 +214,7 @@ export default function TransactionsPage() {
       >
         <TransactionForm
           categories={categories}
+          accounts={accounts}
           initialData={editing}
           onSubmit={handleSubmit}
           onCancel={() => {
@@ -225,6 +229,7 @@ export default function TransactionsPage() {
         isOpen={importModalOpen}
         onClose={() => setImportModalOpen(false)}
         onImported={() => fetchTransactions(1)}
+        accounts={accounts}
       />
 
       <BulkDeleteModal

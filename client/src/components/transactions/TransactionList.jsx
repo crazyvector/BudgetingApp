@@ -40,8 +40,18 @@ export default function TransactionList({
               <p className="text-sm font-medium text-text-primary truncate">
                 {tx.description || tx.category?.name}
               </p>
-              <p className="text-xs text-text-muted">
-                {tx.category?.name} · {formatDate(tx.date)}
+              <p className="text-xs text-text-muted flex items-center gap-1 mt-0.5">
+                <span>{tx.category?.name}</span>
+                <span>·</span>
+                <span>{formatDate(tx.date)}</span>
+                {tx.account && (
+                  <>
+                    <span>·</span>
+                    <span className="flex items-center gap-1 opacity-75">
+                      {tx.account.icon} {tx.account.name}
+                    </span>
+                  </>
+                )}
               </p>
             </div>
 

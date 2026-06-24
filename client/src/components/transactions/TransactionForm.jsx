@@ -6,6 +6,7 @@ import { formatDateForInput } from "../../utils/formatters.js";
 
 export default function TransactionForm({
   categories = [],
+  accounts = [],
   initialData = null,
   onSubmit,
   onCancel,
@@ -17,6 +18,7 @@ export default function TransactionForm({
     description: "",
     date: formatDateForInput(new Date()),
     categoryId: "",
+    accountId: "",
   });
   const [updateAllRelated, setUpdateAllRelated] = useState(false);
   const [errors, setErrors] = useState({});
@@ -29,6 +31,7 @@ export default function TransactionForm({
         description: initialData.description || "",
         date: formatDateForInput(initialData.date),
         categoryId: initialData.categoryId,
+        accountId: initialData.accountId || "",
       });
     }
   }, [initialData]);
@@ -39,6 +42,14 @@ export default function TransactionForm({
     value: c.id,
     label: `${c.icon} ${c.name} ${c.type === "INCOME" ? "(Income)" : c.type === "EXPENSE" ? "(Expense)" : ""}`,
   }));
+
+  const accountOptions = [
+    { value: "", label: "No Account / Cash" },
+    ...accounts.map((a) => ({
+      value: a.id,
+      label: `${a.icon} ${a.name}`,
+    }))
+  ];
 
   function handleChange(field) {
     return (e) => {
@@ -90,6 +101,7 @@ export default function TransactionForm({
       description: form.description,
       date: form.date,
       categoryId: form.categoryId,
+      accountId: form.accountId || undefined,
       updateAllRelated,
     });
   }
@@ -137,6 +149,14 @@ export default function TransactionForm({
         value={form.categoryId}
         onChange={handleChange("categoryId")}
         error={errors.categoryId}
+      />
+
+      {/* Account */}
+      <Select
+        label="Account"
+        options={accountOptions}
+        value={form.accountId}
+        onChange={handleChange("accountId")}
       />
 
       {/* Date */}

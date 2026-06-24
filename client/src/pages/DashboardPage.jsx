@@ -6,32 +6,35 @@ import RecentTransactions from "../components/dashboard/RecentTransactions.jsx";
 import {
   getSummary,
   getExpensesByCategory,
-  getMonthlyTrend,
   getRecentTransactions,
 } from "../api/reports.js";
+import { fetchAccounts } from "../api/client.js";
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState(null);
   const [expensesByCategory, setExpensesByCategory] = useState([]);
   const [trend, setTrend] = useState([]);
   const [recentTxns, setRecentTxns] = useState([]);
+  const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchDashboardData() {
       try {
-        const [summaryData, categoryData, trendData, recentData] =
+        const [summaryData, categoryData, trendData, recentData, accountsData] =
           await Promise.all([
             getSummary(),
             getExpensesByCategory(),
             getMonthlyTrend(6),
             getRecentTransactions(7),
+            fetchAccounts(),
           ]);
 
         setSummary(summaryData);
         setExpensesByCategory(categoryData);
         setTrend(trendData);
         setRecentTxns(recentData);
+        setAccounts(accountsData);
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
       } finally {
@@ -53,7 +56,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Summary cards */}
-      <SummaryCards data={summary} />
+      <SummaryCards data={summary} accounts={accounts} />
 
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
