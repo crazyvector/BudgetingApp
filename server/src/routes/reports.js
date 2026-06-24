@@ -63,6 +63,7 @@ router.get("/expenses-by-category", async (req, res, next) => {
     const targetDate = req.query.month
       ? new Date(`${req.query.month}-01`)
       : new Date();
+    const accountId = req.query.accountId || undefined;
 
     const monthStart = startOfMonth(targetDate);
     const monthEnd = endOfMonth(targetDate);
